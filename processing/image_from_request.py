@@ -55,7 +55,7 @@ Url: TypeAlias = str
 #Эта бяка и плохого файлика) 
 #----------------------------------------------------#
 # BASE IMPLEMENTATION OF SEARCHING IMAGE BY THE PAGE #
-# PLEASE BE MORE ACTRACTIVE USING THIS FUNC          #
+# PLEASE BE MORE ACTRACTIVE WHEN USING THIS FUNC          #
 #----------------------------------------------------#
 #TODO: seperate the process of searching images from WebElement
 def get_images_by_request(table_raw: TableRaw, searching_image_func: SearchFuction=lambda x: x) -> List[Url]:
