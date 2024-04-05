@@ -28,34 +28,36 @@ def save_pic(url: str, code: int, place_name: str) -> None:
         print(f"{url} - image file failed to be written")
 
 
+
+#TODO: replace hardcode column represent to dinamic injection
 @dataclass
 class TableRaw:
     """
-        Representation of table columns structure of the dataset. \n
         Used for dataset raw presentation format)
     """
-    category: str
-    name:     str
-    long:     float
-    lat:      float
-    img:      str
+    name:        str
+    category:    str
+    lat:         float
+    long:        float
+    img:         str
+    description: str
 
     @property
     def to_request(self: "TableRaw") -> str:
-        return " ".join([self.name, self.img, str(self.lat), str(self.long)])
+        return " ".join([str(self.name), f'lat:{str(self.lat)}', f'long:{str(self.long)}', 'city:Нижний новгород'])
     
-    @property
-    def column_labels(self: "TableRaw") -> List[str]:
+    @staticmethod
+    def column_labels() -> List[str]:
         return ['name', 'lat', 'long', 'category', 'img']
     
 
-SearchFuction: TypeAlias = Callable[[WebElement], List[WebElement]]
 Url: TypeAlias = str
+SearchFuction: TypeAlias = Callable[[WebElement], List[WebElement]]
 
 #Эта бяка и плохого файлика) 
 #----------------------------------------------------#
 # BASE IMPLEMENTATION OF SEARCHING IMAGE BY THE PAGE #
-# PLEASE BE MORE ACTRACTIVE WHEN USING THIS FUNC          #
+# PLEASE BE MORE ACTRACTIVE WHEN USING THIS FUNC     #
 #----------------------------------------------------#
 #TODO: seperate the process of searching images from WebElement
 def get_images_by_request(table_raw: TableRaw, searching_image_func: SearchFuction=lambda x: x) -> List[Url]:
@@ -67,10 +69,11 @@ def get_images_by_request(table_raw: TableRaw, searching_image_func: SearchFucti
     driver.get('https://yandex.ru/images/search')
 
     #magick trick. Maybe change delay time to improve performance
-    time.sleep(1)
+    time.sleep(2)
 
-    # fill request on the page
-    request  = table_raw.to_request
+    # fill request on the page 
+    request = table_raw.to_request
+    print(request)
 
     input_el = driver.find_element(By.TAG_NAME, 'input')
     input_el.send_keys(request)
