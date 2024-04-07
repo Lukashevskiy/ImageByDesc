@@ -1,15 +1,22 @@
-from typing import List, TypeAlias
+from typing import Dict, List, TypeAlias
 from typing import Callable
+
+import PIL.Image
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from dataclasses import dataclass
-import time
 
+from dataclasses import dataclass
+
+import time
+import base64
 import requests 
 import os
+import PIL
 
 from constants import *
+
 
 # SOME IMPLEMENTATION OF SAVING IMAGE FROM URL
 def save_pic(url: str, code: int, place_name: str) -> None:
@@ -31,39 +38,69 @@ def save_pic(url: str, code: int, place_name: str) -> None:
 
 #TODO: replace hardcode column represent to dinamic injection
 @dataclass
-class TableRaw:
+class PlacesTableRaw:
     """
         Used for dataset raw presentation format)
     """
+    xid:         str
     name:        str
     category:    str
+    city:        str
+    OSM:         str
+    wikiData:    str
+    rate:        str
     lat:         float
     long:        float
-    img:         str
-    description: str
-
+    
     @property
-    def to_request(self: "TableRaw") -> str:
-        return " ".join([str(self.name), f'lat:{str(self.lat)}', f'long:{str(self.long)}', 'city:Нижний новгород'])
+    def to_request(self: "PlacesTableRaw") -> str:
+        return " ".join([f'[{str(self.name)}]', f'[{str(self.name)}]'])
     
     @staticmethod
     def column_labels() -> List[str]:
-        return ['name', 'lat', 'long', 'category', 'img']
+        return ['XID', 'Name', 'Kind', 'City', 'OSM', 'WikiData', 'Rate', 'Lon', 'Lat']
     
+@dataclass
+class ImageTableRaw:
+    """
+        Used for dataset raw presentation format)
+    """
 
+    name: str
+    city: str
+    image: bytes
+    @staticmethod
+    def column_labels() -> List[str]:
+        return ['name', 'image', 'city']
+    
+    
+    def write_image_impl(self: 'ImageTableRaw', image: bytes) -> None:
+        self.image = str(base64.b64encode(image))[2:-1]
+    
+    @property
+    def to_csv_raw(self) -> Dict[str, bytes]:
+        return {
+            'name': self.name,
+            'image': self.image
+        }
+    
+    @property
+    def to_request(self):
+        return f'[{self.name}] [{self.city}]'
+    
 Url: TypeAlias = str
 SearchFuction: TypeAlias = Callable[[WebElement], List[WebElement]]
 
-#Эта бяка и плохого файлика) 
+#Эта бяка из плохого файлика) 
 #----------------------------------------------------#
 # BASE IMPLEMENTATION OF SEARCHING IMAGE BY THE PAGE #
 # PLEASE BE MORE ACTRACTIVE WHEN USING THIS FUNC     #
 #----------------------------------------------------#
 #TODO: seperate the process of searching images from WebElement
-def get_images_by_request(table_raw: TableRaw, searching_image_func: SearchFuction=lambda x: x) -> List[Url]:
-
-    #TODO: hide driver implementation to syngletone pattern
-    driver = webdriver.Chrome()
+def get_images_by_request(driver, table_raw: ImageTableRaw, searching_image_func: SearchFuction=lambda x: x) -> List[Url]:
+    
+    #TODO: hide driver implementation to syngletone pattern by process
+    # driver = webdriver.Chrome()
 
     #start magick with webdriver
     driver.get('https://yandex.ru/images/search')

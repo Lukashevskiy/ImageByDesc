@@ -1,18 +1,22 @@
 import selenium
 from constants import *
 from typing import Dict
-from processing.image_from_request import TableRaw
+from processing.image_from_request import PlacesTableRaw, ImageTableRaw
 from processing.image_from_request import get_images_by_request, save_pic
 import pandas as pd
 from pathlib import Path
 from enum import Enum
 from typing import Callable, TypeAlias
+import requests
+import tqdm
 
 from dataclasses import *
 ParseFunc: TypeAlias = Callable[[Path], pd.DataFrame]
 
+from selenium import webdriver
 
-reference_table_raw = TableRaw.column_labels()
+reference_table_raw = PlacesTableRaw.column_labels()
+reference_images_table_raw = ImageTableRaw.column_labels()
 print(reference_table_raw)
 
 #func to restructure input dataframe to reference structure.
@@ -26,36 +30,61 @@ def get_table(filepath: Path, parse_func: ParseFunc, bind_labels: Dict[str, str]
 
         dataframe[ref_label] = raw_table[raw_label]
     
-    dataframe.dropna(subset=['name'], inplace=True)
+    dataframe.dropna(subset=['Name'], inplace=True)
     dataframe.fillna('')
     return dataframe
 
-def main():
-    # print(pd.read_excel('./src/csv/sample.xlsx')['Name'].isna().sum())
+
+def to_table_transform(location, filename, cityname):
 
     bind_labels={
-        'name'       : 'Name', 
-        'category'   : 'Kind', 
-        'lat'        : 'Lat', 
-        'long'       : 'Lon',
-        'img'        : '',
-        'description': ''
-    }
+    #     'xid'        : 'XID',
+    #     'name'       : 'Name', 
+    #     'category'   : 'Kind',
+    #     'city'       : '',
+    #     'lat'        : 'Lat', 
+    #     'long'       : 'Lon',
+    # }
+    'XID': 'XID', 
+     'Name': 'Name', 
+     'Kind':'Kind', 
+     'City':'', 
+     'OSM':'OSM', 
+     'WikiData':'WikiData', 
+     'Rate':'Rate',
+     'Lon':'Lon', 
+     'Lat':'Lat'
+     }
     
-    data_frame = get_table(filepath='./src/csv/sample.xlsx', parse_func=lambda path: pd.read_excel(path), bind_labels=bind_labels)
-    # print(data_frame)
-    data_frame.to_csv('./src/csv/sample_new.csv', index=False)
+    data_frame = get_table(filepath=f'{location}/{filename}.xlsx', parse_func=lambda path: pd.read_excel(path), bind_labels=bind_labels)
 
-    for _, raw in data_frame.iterrows():
-        print(raw)
-        table_raw = TableRaw(*raw)
-        images = get_images_by_request(table_raw=table_raw, searching_image_func=None)
-        for index, image in enumerate(images):
-            table_raw.img = image
-            data_frame.add(asdict(table_raw))
-            save_pic(url=image, code=index, place_name=f'./src/images/{table_raw.name}/')
-    
+    data_frame.fillna({'city':f'{cityname}'}, inplace=True)
+
+    data_frame.to_csv(f'{location}/{filename}_new.csv', index=False)
 
 
+
+def main():
+    to_table_transform(location='./src/csv', filename='NN', cityname="Нижний Новгород")
+
+    # image_dataframe = list()
+
+    # places = pd.read_csv('./src/csv/NN_new.csv')[['name', 'city']]
+    # # print(places)
+    # i = 0
+    # driver = webdriver.Chrome()
+    # for _, raw in tqdm.tqdm(places.iterrows(), total=100):
+    #     if i < 100:
+    #         table_raw = ImageTableRaw(name=raw['name'], city=raw['city'], image='')
+    #         images = get_images_by_request(driver, table_raw=table_raw, searching_image_func=None)
+    #         for index, image in tqdm.tqdm(enumerate(images)):
+    #             im_bytes = requests.get(image).content
+    #             # print(im_bytes)
+    #             table_raw.write_image_impl(im_bytes)
+    #             # print(table_raw)
+    #             image_dataframe.append(table_raw.to_csv_raw)
+    #             save_pic(url=image, code=index, place_name=f'./src/images/{table_raw.name}/')
+    #     i += 1
+    # pd.DataFrame(image_dataframe).to_csv('./src/csv/NN_images.csv', index=False)
 if __name__ == "__main__":
     main()
