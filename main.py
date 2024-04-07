@@ -58,33 +58,37 @@ def to_table_transform(location, filename, cityname):
     
     data_frame = get_table(filepath=f'{location}/{filename}.xlsx', parse_func=lambda path: pd.read_excel(path), bind_labels=bind_labels)
 
-    data_frame.fillna({'city':f'{cityname}'}, inplace=True)
+    data_frame.fillna({'City':f'{cityname}'}, inplace=True)
 
     data_frame.to_csv(f'{location}/{filename}_new.csv', index=False)
 
 
 
 def main():
-    to_table_transform(location='./src/csv', filename='NN', cityname="Нижний Новгород")
+    filename= 'EKB'
+    city = 'Екатеринбург'
+    to_table_transform(location='./src/csv', filename=filename, cityname=city)
 
-    # image_dataframe = list()
+    image_dataframe = list()
 
-    # places = pd.read_csv('./src/csv/NN_new.csv')[['name', 'city']]
-    # # print(places)
-    # i = 0
-    # driver = webdriver.Chrome()
-    # for _, raw in tqdm.tqdm(places.iterrows(), total=100):
-    #     if i < 100:
-    #         table_raw = ImageTableRaw(name=raw['name'], city=raw['city'], image='')
-    #         images = get_images_by_request(driver, table_raw=table_raw, searching_image_func=None)
-    #         for index, image in tqdm.tqdm(enumerate(images)):
-    #             im_bytes = requests.get(image).content
-    #             # print(im_bytes)
-    #             table_raw.write_image_impl(im_bytes)
-    #             # print(table_raw)
-    #             image_dataframe.append(table_raw.to_csv_raw)
-    #             save_pic(url=image, code=index, place_name=f'./src/images/{table_raw.name}/')
-    #     i += 1
-    # pd.DataFrame(image_dataframe).to_csv('./src/csv/NN_images.csv', index=False)
+    places = pd.read_csv(f'./src/csv/{filename}_new.csv')[['Name', 'City']]
+    # print(places)
+    i = 0
+    driver = webdriver.Chrome()
+    for _, raw in tqdm.tqdm(places.iterrows(), total=100):
+        if i < 100:
+            table_raw = ImageTableRaw(name=raw['Name'], city=raw['City'], image='')
+            images = get_images_by_request(driver, table_raw=table_raw, searching_image_func=None)
+            for index, image in tqdm.tqdm(enumerate(images)):
+                im_bytes = requests.get(image).content
+                # print(im_bytes)
+                table_raw.write_image_impl(im_bytes)
+                # print(table_raw)
+                image_dataframe.append(table_raw.to_csv_raw)
+                save_pic(url=image, code=index, place_name=f'./src/images/{table_raw.name}/')
+        i += 1
+        if i % 50 == 0:
+            pd.DataFrame(image_dataframe).to_csv(f'./src/csv/{filename}_images.csv', index=False)
+    pd.DataFrame(image_dataframe).to_csv(f'./src/csv/{filename}_images.csv', index=False)
 if __name__ == "__main__":
     main()
